@@ -5,7 +5,6 @@ on:
     types: [published]
   pull_request:
     types: [opened, reopened, synchronize]
-
   workflow_dispatch:
     inputs:
       message:
@@ -130,10 +129,9 @@ jobs:
       RELEASE_DOCKER_HUB: ${{ secrets.RELEASE_DOCKER_HUB }}
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
 
-
   sonar_analysis:
     needs: build-maven-registration
-    if: "${{  github.event_name != 'pull_request' }}"
+    if: "${{ github.event_name != 'pull_request' }}"
     uses: mosip/kattu/.github/workflows/maven-sonar-analysis.yml@master-java21
     with:
       SERVICE_LOCATION: ./registration-processor
@@ -145,3 +143,17 @@ jobs:
       OSSRH_TOKEN: ${{ secrets.OSSRH_TOKEN }}
       GPG_SECRET: ${{ secrets.GPG_SECRET }}
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+
+  jira_dependabot_integration:
+    if: github.actor == 'dependabot[bot]'
+    needs: build-maven-registration
+    uses: mahesh-binayak/kattu/.github/workflows/jira-dependabot-integration.yml@develop
+    with:
+      jira_project: "MOSIP"
+      pr_title: ${{ github.event.pull_request.title }}
+      pr_url: ${{ github.event.pull_request.html_url }}
+      pr_branch: ${{ github.event.pull_request.head.ref }}
+    secrets:
+      JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+      JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
+      JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
